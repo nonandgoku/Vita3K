@@ -32,7 +32,7 @@ jobs:
             cache_path: |
                 C:\vcpkg\installed
                 C:\vcpkg\packages
-            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
             cmake_preset: windows-ninja
           - os: macos-latest
             cache_path: ~/Library/Caches/ccache
@@ -73,7 +73,7 @@ jobs:
 
       - name: Set up build environment (windows-latest)
         run: |
-          vcpkg install zlib:x64-windows boost-system:x64-windows boost-filesystem:x64-windows boost-program-options:x64-windows boost-icl:x64-windows boost-variant:x64-windows openssl:x64-windows
+          vcpkg install zlib:x64-windows-static boost-system:x64-windows-static boost-filesystem:x64-windows-static boost-program-options:x64-windows-static boost-icl:x64-windows-static boost-variant:x64-windows-static openssl:x64-windows-static
         if: matrix.os == 'windows-latest'
 
       - name: Set up SDL 2.24.0 (ubuntu-latest)

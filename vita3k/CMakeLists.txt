@@ -244,6 +244,10 @@ elseif(WIN32)
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/openssl/openssl-3/x64/bin/libssl-3-x64.dll" "$<TARGET_FILE_DIR:vita3k>"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/openssl/openssl-3/x64/bin/libcrypto-3-x64.dll" "$<TARGET_FILE_DIR:vita3k>")
 	endif()
+	if(VCPKG_TARGET_TRIPLET STREQUAL "x64-windows-static")
+		add_compile_options("/MT$<$CONFIG:Debug:d>")
+		set_property(TARGET vita3k PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$CONFIG:Debug:Debug>")
+	endif()
 endif()
 
 # Enable Tracy profiling on the main compilation target

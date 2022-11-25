@@ -21,6 +21,11 @@ add_executable(
 	tests/allocator_tests.cpp
 )
 
+if(WIN32 AND VCPKG_TARGET_TRIPLET STREQUAL "x64-windows-static")
+	add_compile_options("/MT$<$CONFIG:Debug:d>")
+	set_property(TARGET mem-tests PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$CONFIG:Debug:Debug>")
+endif()
+
 target_include_directories(mem-tests PRIVATE include)
 target_link_libraries(mem-tests PRIVATE mem googletest util)
 add_test(NAME mem COMMAND mem-tests)

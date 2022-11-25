@@ -26,6 +26,11 @@ add_executable(
 	tests/arg_layout_tests.cpp
 )
 
+if(WIN32 AND VCPKG_TARGET_TRIPLET STREQUAL "x64-windows-static")
+	add_compile_options("/MT$<$CONFIG:Debug:d>")
+	set_property(TARGET module-tests PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$CONFIG:Debug:Debug>")
+endif()
+
 target_include_directories(module-tests PRIVATE include)
 target_link_libraries(module-tests PRIVATE googletest util)
 add_test(NAME module COMMAND module-tests)
