@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        config: [Release]
+        config: [RelWithDebInfo]
         include:
           - os: ubuntu-latest
             cache_path: ~/.ccache
