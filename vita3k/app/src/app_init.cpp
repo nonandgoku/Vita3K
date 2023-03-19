@@ -201,7 +201,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         }
     }
 
-    if (!init(state.mem, state.renderer->need_page_table)) {
+    if (!init(state.mem, state.renderer->mapping_method == MappingMethod::PageTable)) {
         LOG_ERROR("Failed to initialize memory for emulator state!");
         return false;
     }

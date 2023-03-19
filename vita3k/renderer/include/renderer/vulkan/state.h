@@ -64,6 +64,8 @@ struct VKState : public renderer::State {
 
     // only used when memory mapping is enabled
     std::map<Address, MappedMemory, std::greater<Address>> mapped_memories;
+    // used with double buffer memory trapping
+    BufferTrapping buffer_trapping;
 
     vkutil::Image default_image;
     vkutil::Buffer default_buffer;

@@ -38,7 +38,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
 void new_frame(VKContext &context);
 
 void set_context(VKContext &context, const MemState &mem, VKRenderTarget *rt, const FeatureState &features);
-void set_uniform_buffer(VKContext &context, const MemState &mem, const ShaderProgram *program, const bool vertex_shader, const int block_num, const int size, Ptr<uint8_t> data);
+void set_uniform_buffer(VKContext &context, MemState &mem, const ShaderProgram *program, const bool vertex_shader, const int block_num, const int size, Ptr<uint8_t> data);
 
 void sync_clipping(VKContext &context);
 void sync_stencil_func(VKContext &context, const bool is_back);

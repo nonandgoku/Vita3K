@@ -426,6 +426,8 @@ void close_access_parent_protect_segment(MemState &state, Address addr) {
 
 void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *addr_ptr) {
     assert((size & 4095) == 0);
+    if (!mem.use_page_table)
+        return;
 
     uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
     uint8_t *page_table_entry = addr_ptr - addr;
@@ -445,16 +447,19 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
     mem.external_mapping[addr_value] = { addr, size };
 }
 
-void remove_external_mapping(MemState &mem, uint8_t *addr_ptr) {
+void remove_external_mapping(MemState &mem, uint8_t *addr_ptr, uint32_t size) {
     uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
     MemExternalMapping mapping;
-    {
+    if(mem.use_page_table) {
         const std::unique_lock<std::mutex> lock(mem.protect_mutex);
         auto it = mem.external_mapping.find(addr_value);
         assert(it != mem.external_mapping.end());
 
         mapping = it->second;
         mem.external_mapping.erase(it);
+    } else {
+        mapping.address = static_cast<Address>(addr_ptr - mem.memory.get());
+        mapping.size = size;
     }
 
     // remove all protections on this range
@@ -479,14 +484,16 @@ void remove_external_mapping(MemState &mem, uint8_t *addr_ptr) {
         }
     }
 
-    // unprotect the original memory range
-    mem.page_table[mapping.address / KiB(4)] = mem.memory.get();
-    unprotect_inner(mem, mapping.address, mapping.size);
-    // copy back and reset the page table
-    for (int block = 0; block < mapping.size / KiB(4); block++) {
-        // this is not thread write safe, but hopefully not other thread is busy copying while this happens
-        memcpy(&mem.memory[mapping.address] + block * KiB(4), addr_ptr + block * KiB(4), KiB(4));
-        mem.page_table[mapping.address / KiB(4) + block] = mem.memory.get();
+    if (mem.use_page_table) {
+        // unprotect the original memory range
+        mem.page_table[mapping.address / KiB(4)] = mem.memory.get();
+        unprotect_inner(mem, mapping.address, mapping.size);
+        // copy back and reset the page table
+        for (int block = 0; block < mapping.size / KiB(4); block++) {
+            // this is not thread write safe, but hopefully not other thread is busy copying while this happens
+            memcpy(&mem.memory[mapping.address] + block * KiB(4), addr_ptr + block * KiB(4), KiB(4));
+            mem.page_table[mapping.address / KiB(4) + block] = mem.memory.get();
+        }
     }
 }
 

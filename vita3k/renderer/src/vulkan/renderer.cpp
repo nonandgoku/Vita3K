@@ -153,7 +153,8 @@ VKState::VKState(int gpu_idx)
     , surface_cache(*this)
     , pipeline_cache(*this)
     , texture_cache(*this)
-    , screen_renderer(*this) {
+    , screen_renderer(*this)
+    , buffer_trapping(*this) {
 }
 
 bool VKState::init(const char *base_path, const bool hashless_texture_cache) {
@@ -355,7 +356,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         // we need to make a copy of the vertex buffer for moltenvk, so disable memory mapping
         features.support_memory_mapping = false;
 #endif
-
         if (features.support_memory_mapping) {
             if (support_external_memory) {
                 // disable this extension on GPUs with an alignment requirement higher than 4096 (should only
@@ -364,9 +364,11 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
                 support_external_memory = static_cast<bool>(props.get<vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>().minImportedHostPointerAlignment <= 4096);
             }
 
-            if (!support_external_memory) {
+            if (support_external_memory) {
+                mapping_method = MappingMethod::ExernalHost;
+            } else {
                 LOG_INFO("Using a page table for memory mapping");
-                need_page_table = true;
+                mapping_method = MappingMethod::PageTable;
             }
         }
 
@@ -607,7 +609,8 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     assert((address.address() & 4095) == 0);
     constexpr vk::BufferUsageFlags mapped_memory_flags = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
-    if (mem.use_page_table) {
+    switch (mapping_method) {
+    case MappingMethod::PageTable: {
         // add 4 KiB because we can as an easy way to prevent crashes due to memory accesses right after the memory boundary
         // also make sure later the mapped address is 4K aligned
         vkutil::Buffer buffer(allocator, size + KiB(4));
@@ -630,7 +633,10 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 
         add_external_mapping(mem, address.address(), size, reinterpret_cast<uint8_t *>(buffer.mapped_data));
         mapped_memories[address.address()] = { address.address(), std::move(buffer), mapped_buffer, size, buffer_address };
-    } else {
+        break;
+    }
+
+    case MappingMethod::ExernalHost: {
         void *host_address = address.get(mem);
         auto host_mem_props = device.getMemoryHostPointerPropertiesEXT(vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT, host_address);
         assert(host_mem_props.memoryTypeBits != 0);
@@ -690,6 +696,24 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         const uint64_t buffer_address = device.getBufferAddress(address_info);
 
         mapped_memories[address.address()] = { address.address(), device_memory, mapped_buffer, size, buffer_address };
+        break;
+    }
+    case MappingMethod::DoubleBuffer: {
+        vkutil::Buffer buffer(allocator, size + KiB(4));
+        buffer.init_buffer(mapped_memory_flags, vkutil::vma_mapped_alloc);
+
+        vk::BufferDeviceAddressInfoKHR address_info{
+            .buffer = buffer.buffer
+        };
+        const uint64_t buffer_address = device.getBufferAddress(address_info);
+        const vk::Buffer mapped_buffer = buffer.buffer;
+        mapped_memories[address.address()] = { address.address(), std::move(buffer), mapped_buffer, size, buffer_address };
+        break;
+    }
+
+    default:
+        LOG_CRITICAL("Mapping method not handled, report it to the devs!");
+        break;
     }
 
     return true;
@@ -707,11 +731,25 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
     // we need to wait in case the buffer is being used
     device.waitIdle();
 
-    if (!mem.use_page_table) {
+    switch (mapping_method) {
+    case MappingMethod::ExernalHost:
         device.destroyBuffer(ite->second.buffer);
         device.freeMemory(std::get<vk::DeviceMemory>(ite->second.buffer_impl));
-    } else {
-        remove_external_mapping(mem, address.cast<uint8_t>().get(mem));
+        break;
+
+    case MappingMethod::DoubleBuffer: {
+        remove_external_mapping(mem, address.cast<uint8_t>().get(mem), ite->second.size);
+        // remove all the trapping related to these locations
+        buffer_trapping.remove_range(address.address(), address.address() + ite->second.size);
+    }
+
+    case MappingMethod::PageTable:
+        remove_external_mapping(mem, address.cast<uint8_t>().get(mem), ite->second.size);
+        break;
+
+    default:
+        LOG_CRITICAL("Mapping method not handled, report it to the devs!");
+        break;
     }
     mapped_memories.erase(ite);
 }
@@ -782,4 +820,85 @@ void VKState::preclose_action() {
 
     pipeline_cache.save_pipeline_cache();
 }
+
+BufferTrapping::BufferTrapping(VKState &state)
+    : state(state) {}
+
+TrappedBuffer *BufferTrapping::access_buffer(Address addr, uint32_t size, MemState &mem) {
+    if (size < 3 * KiB(4)) {
+        // not big enough to apply buffer trapping
+        auto mem_it = state.mapped_memories.lower_bound(addr);
+        if (mem_it == state.mapped_memories.end() || mem_it->first + mem_it->second.size < addr + size) {
+            LOG_ERROR("Buffer at address {} is not completely mapped", log_hex(addr));
+            return &temp_buffer;
+        }
+
+        temp_buffer.size = size;
+        temp_buffer.mapped_location = reinterpret_cast<uint8_t *>(std::get<vkutil::Buffer>(mem_it->second.buffer_impl).mapped_data);
+        temp_buffer.mapped_location += addr - mem_it->first;
+        temp_buffer.extra = ~0;
+
+        memcpy(temp_buffer.mapped_location, Ptr<void>(addr).get(mem), size);
+        return &temp_buffer;
+    }
+
+    auto it = trapped_buffers.find(addr);
+    bool is_new = false;
+    if (it != trapped_buffers.end()) {
+        // must check if everything match
+        TrappedBuffer &buffer = it->second;
+        if (!buffer.dirty && buffer.size >= size)
+            // nothing to change
+            return &it->second;
+    } else {
+        it = trapped_buffers.emplace(addr, TrappedBuffer{}).first;
+        is_new = true;
+    }
+
+    {
+        // remove the following overlapping dirty buffers
+        auto next_it = it;
+        next_it++;
+        while (next_it != trapped_buffers.end() && next_it->first < addr + size) {
+            if (next_it->second.dirty)
+                next_it = trapped_buffers.erase(next_it);
+            else
+                next_it++;
+        }
+    }
+    it->second.size = size;
+    it->second.dirty = false;
+
+    if (is_new) {
+        // we must find the matching mapped buffer
+        auto mem_it = state.mapped_memories.lower_bound(addr);
+        if (mem_it == state.mapped_memories.end() || mem_it->first + mem_it->second.size < addr + size) {
+            LOG_ERROR("Buffer at address {} is not completely mapped", log_hex(addr));
+            return &it->second;
+        }
+
+        it->second.mapped_location = reinterpret_cast<uint8_t *>(std::get<vkutil::Buffer>(mem_it->second.buffer_impl).mapped_data);
+        it->second.mapped_location += addr - mem_it->first;
+        it->second.extra = ~0;
+    }
+
+    Address aligned_addr = align(addr, KiB(4));
+    uint32_t aligned_size = align_down(addr + size - aligned_addr, KiB(4));
+    add_protect(mem, aligned_addr, aligned_size, MemPerm::ReadOnly, [it](Address addr, bool write) {
+        it->second.dirty = true;
+        return true;
+    });
+
+    // copy back the data as it was non-existent or dirty
+    memcpy(it->second.mapped_location, Ptr<void>(addr).get(mem), size);
+
+    return &it->second;
+}
+
+void BufferTrapping::remove_range(Address start, Address end) {
+    auto it = trapped_buffers.lower_bound(start);
+    while (it != trapped_buffers.end() && it->first < end)
+        it = trapped_buffers.erase(it);
+}
+
 } // namespace renderer::vulkan

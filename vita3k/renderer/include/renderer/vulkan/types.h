@@ -95,6 +95,35 @@ struct MappedMemory {
     uint64_t buffer_address;
 };
 
+enum struct BufferType {
+    Storage,
+    Vertex,
+    Index16,
+    Index32
+};
+
+struct TrappedBuffer {
+    uint32_t size;
+    // used by the index buffer to keep the max index
+    uint32_t extra;
+    bool dirty = false;
+    uint8_t* mapped_location;
+};
+
+// structure to track which buffer were trapped and if they have been modified
+// this is used for: storage buffers, index buffers and vertex buffers
+struct BufferTrapping {
+    std::map<Address, TrappedBuffer> trapped_buffers;
+    // Used when no buffer trapping is applied
+    TrappedBuffer temp_buffer;
+
+    VKState& state;
+
+    BufferTrapping(VKState& state);
+    TrappedBuffer* access_buffer(Address addr, uint32_t size, MemState& mem);
+    void remove_range(Address start, Address end);
+};
+
 // request to trigger a notification after the fence has been waited for
 struct NotificationRequest {
     SceGxmNotification notifications[2];

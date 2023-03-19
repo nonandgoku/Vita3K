@@ -30,6 +30,13 @@ struct SDL_Window;
 struct DisplayState;
 struct GxmState;
 
+enum struct MappingMethod {
+    Disabled,
+    ExernalHost,
+    PageTable,
+    DoubleBuffer
+};
+
 namespace renderer {
 struct State {
     const char *base_path;
@@ -61,7 +68,7 @@ struct State {
 
     bool should_display;
 
-    bool need_page_table = false;
+    MappingMethod mapping_method = MappingMethod::Disabled;
 
     virtual bool init(const char *base_path, const bool hashless_texture_cache) = 0;
     virtual void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
