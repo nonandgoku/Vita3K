@@ -246,12 +246,39 @@ bool is_compressed_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
         return true;
     default:
-        break;
+        return false;
     }
+}
 
-    return false;
+std::pair<uint32_t, uint32_t> get_texel_dimension(SceGxmTextureBaseFormat base_format) {
+    switch (base_format) {
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
+        // all of them have 4x4 texels
+        return { 4, 4 };
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
+        return { 8, 4 };
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+        return { 4, 4 };
+    case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
+        // make it 2x1 so one texel takes one byte
+        return { 2, 1 };
+    default:
+        return { 1, 1 };
+    }
 }
 
 size_t get_compressed_size(SceGxmTextureBaseFormat base_format, std::uint32_t width, std::uint32_t height) {

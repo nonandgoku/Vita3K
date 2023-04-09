@@ -189,6 +189,7 @@ void upload_bound_texture(const TextureCacheState &cache, const SceGxmTexture &g
 void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, MemState &mem);
 size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
 bool is_compressed_format(SceGxmTextureBaseFormat base_format);
+std::pair<uint32_t, uint32_t> get_texel_dimension(SceGxmTextureBaseFormat);
 bool can_texture_be_unswizzled_without_decode(SceGxmTextureBaseFormat fmt, bool is_vulkan);
 size_t get_compressed_size(SceGxmTextureBaseFormat base_format, std::uint32_t width, std::uint32_t height);
 TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem);
