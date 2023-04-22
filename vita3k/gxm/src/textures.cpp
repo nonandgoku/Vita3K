@@ -19,18 +19,18 @@
 #include <map>
 
 namespace gxm {
-size_t get_width(const SceGxmTexture *texture) {
-    if ((texture->type << 29 != SCE_GXM_TEXTURE_SWIZZLED) && (texture->type << 29 != SCE_GXM_TEXTURE_CUBE)) {
-        return texture->width + 1;
+uint32_t get_width(const SceGxmTexture &texture) {
+    if ((texture.type << 29 != SCE_GXM_TEXTURE_SWIZZLED) && (texture.type << 29 != SCE_GXM_TEXTURE_CUBE)) {
+        return texture.width + 1;
     }
-    return 1ull << (texture->width_base2 & 0xF);
+    return 1u << (texture.width_base2 & 0xF);
 }
 
-size_t get_height(const SceGxmTexture *texture) {
-    if ((texture->type << 29 != SCE_GXM_TEXTURE_SWIZZLED) && (texture->type << 29 != SCE_GXM_TEXTURE_CUBE)) {
-        return texture->height + 1;
+uint32_t get_height(const SceGxmTexture &texture) {
+    if ((texture.type << 29 != SCE_GXM_TEXTURE_SWIZZLED) && (texture.type << 29 != SCE_GXM_TEXTURE_CUBE)) {
+        return texture.height + 1;
     }
-    return 1ull << (texture->height_base2 & 0xF);
+    return 1u << (texture.height_base2 & 0xF);
 }
 
 SceGxmTextureFormat get_format(const SceGxmTexture *texture) {
@@ -42,8 +42,8 @@ SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src) {
     return static_cast<SceGxmTextureBaseFormat>(src & SCE_GXM_TEXTURE_BASE_FORMAT_MASK);
 }
 
-size_t get_stride_in_bytes(const SceGxmTexture *texture) {
-    return ((texture->mip_filter | (texture->min_filter << 1) | (texture->mip_count << 3) | (texture->lod_bias << 7)) + 1) * 4;
+uint32_t get_stride_in_bytes(const SceGxmTexture &texture) {
+    return ((texture.mip_filter | (texture.min_filter << 1) | (texture.mip_count << 3) | (texture.lod_bias << 7)) + 1) * 4;
 }
 
 bool is_block_compressed_format(SceGxmTextureBaseFormat base_format) {

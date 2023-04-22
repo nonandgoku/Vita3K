@@ -425,8 +425,11 @@ void upload_bound_texture(const TextureCacheState &cache, const SceGxmTexture &g
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
 
     const bool block_compressed = is_compressed_format(base_format);
-    auto width = static_cast<uint32_t>(gxm::get_width(&gxm_texture));
-    auto height = static_cast<uint32_t>(gxm::get_height(&gxm_texture));
+    const uint32_t base_width = gxm::get_width(gxm_texture);
+    const uint32_t base_height = gxm::get_height(gxm_texture);
+
+    const uint32_t base_width_pow2 = std::bit_ceil(base_width);
+    const uint32_t base_height_pow2 = std::bit_ceil(base_height);
 
     const Ptr<uint8_t> data(gxm_texture.data_addr << 2);
     uint8_t *texture_data = data.get(mem);
@@ -446,22 +449,9 @@ void upload_bound_texture(const TextureCacheState &cache, const SceGxmTexture &g
 
     const auto texture_type = gxm_texture.texture_type();
     const bool is_swizzled = (texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
-    const bool need_unswizzle = is_swizzled && block_compressed;
-    const bool need_decompress_and_unswizzle_on_cpu = is_swizzled && !block_compressed && !can_texture_be_unswizzled_without_decode(base_format, is_vulkan);
-
     uint32_t mip_index = 0;
-    uint32_t total_mip = get_upload_mip(gxm_texture.true_mip_count(), width, height, base_format);
-    uint32_t face_uploaded_count = 0;
-    uint32_t face_total_count;
-    size_t source_size = 0;
-    size_t total_source_so_far = 0;
-
-    // Modified during decompression
-    uint32_t org_width = width;
-    uint32_t org_height = height;
-
-    const uint32_t org_width_const = width;
-    const uint32_t org_height_const = height;
+    uint32_t total_mip = get_upload_mip(gxm_texture.true_mip_count(), base_width, base_height, base_format);
+    uint32_t face_total_count = 1;
 
     uint32_t face_align_bytes = 4;
 
@@ -475,15 +465,58 @@ void upload_bound_texture(const TextureCacheState &cache, const SceGxmTexture &g
     face_total_count = 1;
     if ((texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY)) {
         face_idx = 1;
-        face_total_count = 6;
+        face_total_count = 6 + 1;
 
-        const bool twok_align_cond1 = ((width >= 32) && (height >= 32) && ((bytes_per_texel == 1) || (is_block_compressed_format(base_format))));
-        const bool twok_align_cond2 = ((width >= 16) && (height >= 16) && ((bytes_per_texel == 2) || (bytes_per_texel == 4)));
-        const bool twok_align_cond3 = ((width >= 8) && (height >= 8) && (bytes_per_texel == 8));
+        const bool twok_align_cond1 = ((base_width >= 32) && (base_height >= 32) && ((bytes_per_texel == 1) || (is_block_compressed_format(base_format))));
+        const bool twok_align_cond2 = ((base_width >= 16) && (base_height >= 16) && ((bytes_per_texel == 2) || (bytes_per_texel == 4)));
+        const bool twok_align_cond3 = ((base_width >= 8) && (base_height >= 8) && (bytes_per_texel == 8));
 
         if (twok_align_cond1 || twok_align_cond2 || twok_align_cond3) {
             face_align_bytes = 2048;
         }
+    }
+
+    uint32_t total_offset = 0;
+    for (; face_idx < face_total_count; face_idx++) {
+        uint32_t total_face_size = 0;
+        for (int mip_level = 0; mip_level < total_mip; mip_level++) {
+            const uint32_t width = base_width >> mip_level;
+            const uint32_t height = base_height >> mip_level;
+            const uint32_t width_pow2 = base_width_pow2 >> mip_level;
+            const uint32_t height_pow2 = base_height_pow2 >> mip_level;
+            // the width used to compute the offset for the next mips
+            uint32_t source_width = width_pow2;
+
+            uint32_t stride;
+            // compute the stride
+            switch (texture_type) {
+            case SCE_GXM_TEXTURE_TILED:
+                stride = align(width, 32);
+                break;
+            case SCE_GXM_TEXTURE_LINEAR:
+                source_width = std::max(source_width, 8u);
+                stride = align(width, 8);
+                break;
+            case SCE_GXM_TEXTURE_LINEAR_STRIDED:
+                stride = gxm::get_stride_in_bytes(gxm_texture) * 8 / bpp;
+                break;
+            default:
+                // Works for all the remaining cases
+                stride = width_pow2;
+                break;
+            }
+            stride = align(stride, texel_width);
+            uint32_t upload_height = align(height, texel_height);
+
+            uint8_t *pixels = texture_data + total_offset;
+
+            // add offset to next mips
+            const uint32_t offset_to_next = (source_width * height_pow2 * bytes_per_texel) / (texel_width * texel_height);
+            total_face_size += offset_to_next;
+            total_offset += offset_to_next;
+        }
+
+        total_offset = align(total_offset, face_align_bytes);
     }
 
     while (face_uploaded_count < face_total_count && org_width && org_height) {

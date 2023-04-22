@@ -29,11 +29,11 @@ SceGxmColorBaseFormat get_base_format(SceGxmColorFormat src);
 size_t bits_per_pixel(SceGxmColorBaseFormat base_format);
 size_t get_stride_in_bytes(const SceGxmColorFormat src, const std::size_t stride_in_pixels);
 // Textures.
-size_t get_width(const SceGxmTexture *texture);
-size_t get_height(const SceGxmTexture *texture);
+uint32_t get_width(const SceGxmTexture &texture);
+uint32_t get_height(const SceGxmTexture &texture);
 SceGxmTextureFormat get_format(const SceGxmTexture *texture);
 SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src);
-size_t get_stride_in_bytes(const SceGxmTexture *texture);
+uint32_t get_stride_in_bytes(const SceGxmTexture &texture);
 bool is_block_compressed_format(SceGxmTextureBaseFormat base_format);
 bool is_paletted_format(SceGxmTextureBaseFormat base_format);
 bool is_yuv_format(SceGxmTextureBaseFormat base_format);

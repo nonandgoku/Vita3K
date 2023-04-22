@@ -274,8 +274,8 @@ std::pair<uint32_t, uint32_t> get_texel_dimension(SceGxmTextureBaseFormat base_f
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
         return { 4, 4 };
     case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
-        // make it 2x1 so one texel takes one byte
-        return { 2, 1 };
+        // a mip level for P4 is at least 4x4, so make it this way
+        return { 4, 4 };
     default:
         return { 1, 1 };
     }
