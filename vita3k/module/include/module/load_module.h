@@ -118,7 +118,11 @@ inline SysmodulePaths init_sysmodule_paths() {
 inline SysmoduleInternalPaths init_sysmodule_internal_paths() {
     SysmoduleInternalPaths p;
 
+    p[SCE_SYSMODULE_INTERNAL_AUDIOCODEC] = { "audiocodec" };
+    p[SCE_SYSMODULE_INTERNAL_BXCE] = { "bXCe" };
+    p[SCE_SYSMODULE_INTERNAL_INI_FILE_PROCESSOR] = { "ini_file_processor" };
     p[SCE_SYSMODULE_INTERNAL_PAF] = { "libpaf" };
+    p[SCE_SYSMODULE_INTERNAL_COMMON_GUI_DIALOG] = { "common_gui_dialog" };
 
     return p;
 }
