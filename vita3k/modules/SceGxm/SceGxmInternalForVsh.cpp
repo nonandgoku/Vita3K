@@ -17,8 +17,12 @@
 
 #include "SceGxmInternalForVsh.h"
 
-EXPORT(int, sceGxmVshInitialize) {
-    return UNIMPLEMENTED();
+#include "SceGxm.h"
+
+EXPORT(int, sceGxmVshInitialize, SceGxmInitializeParams *params) {
+    // paf calls this with params->flags set to 2, 6 or 10, I don't know what this means
+    *reinterpret_cast<uint32_t *>(params) = 0;
+    return CALL_EXPORT(sceGxmInitialize, params);
 }
 
 EXPORT(int, sceGxmVshSyncObjectClose) {

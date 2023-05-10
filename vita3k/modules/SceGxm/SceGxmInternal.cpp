@@ -19,14 +19,14 @@
 
 #include "SceGxm.h"
 
-#include <gxm/types.h>
 #include <mem/ptr.h>
+
+struct SceGxmRenderTarget;
+struct SceGxmRenderTargetParams;
 
 EXPORT(int, sceGxmCheckMemoryInternal) {
     return UNIMPLEMENTED();
 }
-
-struct SceGxmRenderTarget;
 
 EXPORT(int, sceGxmCreateRenderTargetInternal, const SceGxmRenderTargetParams *params, Ptr<SceGxmRenderTarget> *renderTarget) {
     return CALL_EXPORT(sceGxmCreateRenderTarget, params, renderTarget);
