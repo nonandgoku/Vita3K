@@ -539,7 +539,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
                 int res = MZ_OK;
                 if (seg_infos[seg_index].length > 0)
-                    mz_uncompress(uncompressed.get(), &dest_bytes, compressed_segment_bytes, static_cast<mz_ulong>(seg_infos[seg_index].length));
+                    res = mz_uncompress(uncompressed.get(), &dest_bytes, compressed_segment_bytes, static_cast<mz_ulong>(seg_infos[seg_index].length));
                 assert(res == MZ_OK);
                 if (!relocate(uncompressed.get(), seg_header.p_filesz, segment_reloc_info, mem)) {
                     return -1;
