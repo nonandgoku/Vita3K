@@ -149,6 +149,11 @@ EXPORT(int, _sceKernelStartModule, SceUID uid, SceSize args, const Ptr<void> arg
     TRACY_FUNC(_sceKernelStartModule, uid, args, argp, flags, pOpt, pRes);
     const SceKernelModuleInfoPtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
 
+    if (uid == 1 || uid == 2) {
+        *pRes = 0;
+        return uid;
+    }
+
     return start_module(emuenv.kernel, thread_id, module, args, argp, pRes);
 }
 
