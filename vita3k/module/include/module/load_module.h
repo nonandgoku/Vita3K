@@ -24,6 +24,7 @@
 static constexpr auto SYSMODULE_COUNT = 0x56;
 
 using SysmodulePaths = std::array<std::vector<const char *>, SYSMODULE_COUNT>;
+using SysmoduleInternalPaths = std::map<SceSysmoduleInternalModuleId, std::vector<const char *>>;
 
 inline SysmodulePaths init_sysmodule_paths() {
     SysmodulePaths p;
@@ -114,7 +115,16 @@ inline SysmodulePaths init_sysmodule_paths() {
     return p;
 }
 
+inline SysmoduleInternalPaths init_sysmodule_internal_paths() {
+    SysmoduleInternalPaths p;
+
+    p[SCE_SYSMODULE_INTERNAL_PAF] = { "libpaf" };
+
+    return p;
+}
+
 const SysmodulePaths sysmodule_paths = init_sysmodule_paths();
+const SysmoduleInternalPaths sysmodule_internal_paths = init_sysmodule_internal_paths();
 
 bool is_lle_module(SceSysmoduleModuleId module_id, EmuEnvState &emuenv);
 bool is_module_loaded(KernelState &kernel, SceSysmoduleModuleId module_id);

@@ -28,7 +28,8 @@ struct KernelState;
 void init_libraries(EmuEnvState &emuenv);
 void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread_id);
 bool load_module(EmuEnvState &emuenv, SceUID thread_id, SceSysmoduleModuleId module_id);
-Address resolve_export(KernelState &kernel, uint32_t nid);
+bool load_module_internal_with_arg(EmuEnvState &emuenv, SceUID thread_id, SceSysmoduleInternalModuleId module_id, SceSize args, Ptr<void> argp, int* retcode);
+    Address resolve_export(KernelState &kernel, uint32_t nid);
 uint32_t resolve_nid(KernelState &kernel, Address addr);
 
 struct VarExport {

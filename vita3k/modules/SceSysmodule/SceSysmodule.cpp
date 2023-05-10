@@ -200,14 +200,18 @@ EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
 EXPORT(int, sceSysmoduleLoadModuleInternal, SceSysmoduleInternalModuleId module_id) {
     TRACY_FUNC(sceSysmoduleLoadModuleInternal, module_id);
     LOG_TRACE("sceSysmoduleLoadModuleInternal(module_id:{})", to_debug_str(emuenv.mem, module_id));
-    return UNIMPLEMENTED();
+
+    bool loaded = load_module_internal_with_arg(emuenv, thread_id, module_id, 0, Ptr<void>(), nullptr);
+    return loaded ? SCE_SYSMODULE_LOADED : RET_ERROR(SCE_SYSMODULE_ERROR_FATAL);
 }
 
-EXPORT(int, sceSysmoduleLoadModuleInternalWithArg, SceSysmoduleInternalModuleId module_id, SceSize args, void *argp, const SceSysmoduleOpt *option) {
+EXPORT(int, sceSysmoduleLoadModuleInternalWithArg, SceSysmoduleInternalModuleId module_id, SceSize args, Ptr<void> argp, const SceSysmoduleOpt *option) {
     TRACY_FUNC(sceSysmoduleLoadModuleInternalWithArg, module_id, args, argp, option);
     LOG_TRACE("sceSysmoduleLoadModuleInternalWithArg(module_id:{}, args:{}, argp:{},option:{})", to_debug_str(emuenv.mem, module_id),
         to_debug_str(emuenv.mem, args), to_debug_str(emuenv.mem, argp), to_debug_str(emuenv.mem, option));
-    return UNIMPLEMENTED();
+
+    bool loaded = load_module_internal_with_arg(emuenv, thread_id, module_id, args, argp, option ? option->result.get(emuenv.mem) : nullptr);
+    return loaded ? SCE_SYSMODULE_LOADED : RET_ERROR(SCE_SYSMODULE_ERROR_FATAL);
 }
 
 EXPORT(int, sceSysmoduleUnloadModule, SceSysmoduleModuleId module_id) {
