@@ -121,7 +121,11 @@ inline SysmoduleInternalPaths init_sysmodule_internal_paths() {
     p[SCE_SYSMODULE_INTERNAL_AUDIOCODEC] = { "audiocodec" };
     p[SCE_SYSMODULE_INTERNAL_BXCE] = { "bXCe" };
     p[SCE_SYSMODULE_INTERNAL_INI_FILE_PROCESSOR] = { "ini_file_processor" };
+    p[SCE_SYSMODULE_INTERNAL_NP_ACTIVITY_NET] = { "np_activity" };
     p[SCE_SYSMODULE_INTERNAL_PAF] = { "libpaf" };
+    p[SCE_SYSMODULE_INTERNAL_SQLITE_VSH] = { "sqlite" };
+    p[SCE_SYSMODULE_INTERNAL_DBUTIL] = { "dbutil" };
+    p[SCE_SYSMODULE_INTERNAL_ACTIVITY_DB] = { "activity_db" };
     p[SCE_SYSMODULE_INTERNAL_COMMON_GUI_DIALOG] = { "common_gui_dialog" };
 
     return p;
