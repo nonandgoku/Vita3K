@@ -140,9 +140,9 @@ EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize ar
     return start_module(emuenv.kernel, thread_id, module, args, argp, pRes);
 }
 
-EXPORT(int, _sceKernelOpenModule) {
-    TRACY_FUNC(_sceKernelOpenModule);
-    return UNIMPLEMENTED();
+EXPORT(SceUID, _sceKernelOpenModule, const char *moduleFileName, SceSize args, const Ptr<void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes) {
+    TRACY_FUNC(_sceKernelOpenModule, moduleFileName, args, argp, flags, pOpt, pRes);
+    return CALL_EXPORT(_sceKernelLoadStartModule, moduleFileName, args, argp, flags, pOpt, pRes);
 }
 
 EXPORT(int, _sceKernelStartModule, SceUID uid, SceSize args, const Ptr<void> argp, SceUInt32 flags, const Ptr<SceKernelStartModuleOpt> pOpt, int *pRes) {
