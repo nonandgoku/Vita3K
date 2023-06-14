@@ -62,6 +62,7 @@ struct SceDisplayFrameBuf {
 
 EXPORT(SceInt32, _sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync);
 EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync);
+EXPORT(SceInt32, sceDisplayRegisterVblankStartCallback, SceUID uid);
 
 BRIDGE_DECL(_sceDisplayGetFrameBuf)
 BRIDGE_DECL(_sceDisplayGetFrameBufInternal)

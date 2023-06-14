@@ -201,6 +201,11 @@ EXPORT(int, sceSysmoduleLoadModuleInternal, SceSysmoduleInternalModuleId module_
     TRACY_FUNC(sceSysmoduleLoadModuleInternal, module_id);
     LOG_TRACE("sceSysmoduleLoadModuleInternal(module_id:{})", to_debug_str(emuenv.mem, module_id));
 
+    if (static_cast<int>(module_id) >= 0) {
+        // apparently you can load non-internal modules with this function
+        return CALL_EXPORT(sceSysmoduleLoadModule, static_cast<SceSysmoduleModuleId>(module_id));
+    }
+
     bool loaded = load_module_internal_with_arg(emuenv, thread_id, module_id, 0, Ptr<void>(), nullptr);
     return loaded ? SCE_SYSMODULE_LOADED : RET_ERROR(SCE_SYSMODULE_ERROR_FATAL);
 }
