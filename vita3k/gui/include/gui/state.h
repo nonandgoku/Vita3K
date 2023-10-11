@@ -359,7 +359,8 @@ struct GuiState {
 
     std::vector<ImGui_Texture> manuals;
 
-    std::map<ShadersCompiledDisplay, uint64_t> shaders_compiled_display;
+    uint64_t shaders_compiled_display_count = 0;
+    uint64_t shaders_compiled_display_time = 0;
 
     SceUID thread_watch_index = -1;
 
