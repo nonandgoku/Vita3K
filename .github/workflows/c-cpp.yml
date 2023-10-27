@@ -85,7 +85,7 @@ jobs:
       - name: Set up SDL 2.28.3 (ubuntu-latest)
         run: |
           SDL2VER=2.28.3
-          if [[ ! -e ~/.ccache ]]; then
+          if [[ ! -e ~/.ccache ]]; then 
             mkdir ~/.ccache
           fi  
           cd ~/.ccache
