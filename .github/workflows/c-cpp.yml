@@ -30,7 +30,7 @@ jobs:
             cache_path: |
                 C:\vcpkg\installed
                 C:\vcpkg\packages
-            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
             cmake_preset: windows-ninja
           - os: macos-latest
             cache_path: ~/Library/Caches/ccache
@@ -65,7 +65,7 @@ jobs:
         if: matrix.os == 'windows-latest'
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
-            variant: sccache
+            variant: ccache
         if: matrix.os == 'windows-latest'
  
       - uses: actions/cache@v3
