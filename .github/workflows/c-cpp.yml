@@ -66,6 +66,7 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
             variant: ccache
+            max-size: "1G"
         if: matrix.os == 'windows-latest'
  
       - uses: actions/cache@v3
